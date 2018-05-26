@@ -10,38 +10,42 @@ import java.util.Scanner;
 public class Client {
     private static final int port = 2018;
 
-    private static PrintWriter socket_out;
-    private static BufferedReader socket_in;
+    private static Socket socket;
+    public static PrintWriter socket_out;
+    public static BufferedReader socket_in;
 
     private static Scanner scanner;
 
     public static void main(String[] args) throws Exception {
         InetAddress address = InetAddress.getByName("127.0.0.1");
 
-        Socket socket = new Socket(address,port);
+        socket = new Socket(address,port);
 
         socket_in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         socket_out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
 
 
-        System.out.println("Unesite 1 za Registraciju, 2 za loginUser ili 0 za izlaz.");
+        System.out.println("Unesite 1 za Registraciju, 2 za login ili 0 za izlaz.");
         scanner = new Scanner(System.in);
 
         String input = scanner.nextLine();
 
         if(input.equals("1")){
             registerUser();
+            enterLobby();
         }
 
         if(input.equals("2")){
             loginUser();
+            enterLobby();
         }
 
         if(input.equals("0")){
             System.exit(0);
         }
 
-        while(true);
+
+
 
     }
 
@@ -71,7 +75,7 @@ public class Client {
                 confirmation = true; // ukoliko korisnik ne postoji, postavljamo dozvolu na true kako se vise ne bismo vrteli u ovoj petlji
             }
             else{ // zauzeto korisnicko ime
-                System.out.println("Korisnik sa tim korisnickim imenom vec pstoji. Unesite neko drugo korisnicko ime.");
+                System.out.println("Korisnik sa tim korisnickim imenom vec postoji. Unesite neko drugo korisnicko ime.");
             }
         }
 
@@ -124,6 +128,40 @@ public class Client {
                 System.out.println("Netacna lozinka.");
             }
         }
+    }
+
+    private static void enterLobby() throws IOException {
+        System.out.println("Dobrodosli u javni chat! Za slanje privatnih poruka unesite /w <imePrimaoca>, za prikaz online korisnika unesite \"who\", a za odjavu \"logout\".");
+
+        String input = scanner.nextLine();
+
+        while(!input.equals("logout")){
+            if(input.equals("who")){
+                socket_out.println(ProtocolMessages.LIST_CONTACTS_REQUEST);
+
+                String response = socket_in.readLine();
+
+                String[] users = response.split(";");
+
+                System.out.println("Online korisnici:");
+                for(int i=0; i<users.length; i++){
+                    System.out.println(users[i]);
+                }
+            }
+
+            if(input.contains("/w ")){
+                //TODO implementirati whisper
+            }else{
+                socket_out.println(ProtocolMessages.BROADCAST_MESSAGE + " " + input);
+            }
+            input = scanner.nextLine();
+        }
+
+        // logout
+        socket_out.println(ProtocolMessages.CLIENT_CONNECTION_CLOSURE);
+        socket_out.close();
+        socket_in.close();
+        socket.close();
     }
 
 }

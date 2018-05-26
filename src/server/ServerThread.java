@@ -44,12 +44,57 @@ public class ServerThread implements Runnable {
                     loginUser();
                 }
 
+                if(input.equals(ProtocolMessages.LIST_CONTACTS_REQUEST)){
+                    String data = "";
+                    Iterator it = Server.connections.entrySet().iterator();
+
+                    while (it.hasNext()) {
+                        Map.Entry pair = (Map.Entry)it.next();
+
+                        User user = (User)pair.getKey();
+
+                        if(pair.getValue() != null && pair.getValue() != this){
+                            data += user.getUsername();
+                            data += ";";
+                        }
+                    }
+
+                    socket_out.println(data);
+                }
+
+                if(input.contains(ProtocolMessages.BROADCAST_MESSAGE)){
+                    Iterator it = Server.connections.entrySet().iterator();
+
+                    while (it.hasNext()) {
+                        Map.Entry pair = (Map.Entry)it.next();
+
+
+                        if(pair.getValue() != null && pair.getValue() != this){
+                            ((ServerThread)pair.getValue()).socket_out.println(input);
+                        }
+                    }
+                }
                input = socket_in.readLine();
             }
 
 
-            // kada korisnik posalje poruku za disconnect
-            // TODO disconnect
+            // korisnik se diskonektovao, postavljamo korisnikov thread na null
+            Iterator it = Server.connections.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry)it.next();
+
+                if((ServerThread)pair.getValue() == this){
+                    //System.out.println("[DBG]: [B] " + ((User)pair.getKey()).getUsername() + " " + pair.getValue());
+                    pair.setValue(null);
+
+                    //System.out.println("[DBG]: [A] " + ((User)pair.getKey()).getUsername() + " " + pair.getValue());
+                }
+
+            }
+
+            socket_out.close();
+            socket_in.close();
+            socket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -135,5 +180,13 @@ public class ServerThread implements Runnable {
         else{ // neispravno korisnicko ime, izvestava korisnika i zavrsava sa loginom
             socket_out.println(ProtocolMessages.LOGIN_BAD);
         }
+    }
+
+    public PrintWriter getSocket_out() {
+        return socket_out;
+    }
+
+    public BufferedReader getSocket_in() {
+        return socket_in;
     }
 }

@@ -3,6 +3,7 @@ package model;
 public class ProtocolMessages {
     public static final String REGISTRATION_REQUEST = "REGISTRATION_REQUEST";
     public static final String LOGIN_REQUEST = "LOGIN_REQUEST";
+    public static final String LIST_CONTACTS_REQUEST = "LIST_CONTACTS_REQUEST";
 
     public static final String USERNAME_AVAILABLE = "USERNAME_AVAILABLE";
     public static final String USERNAME_TAKEN = "USERNAME_TAKEN";
@@ -11,4 +12,5 @@ public class ProtocolMessages {
 
     public static final String CLIENT_CONNECTION_CLOSURE = "CLIENT_CONNECTION_CLOSURE";
 
+    public static final String BROADCAST_MESSAGE = "BROADCAST_MESSAGE";
 }
