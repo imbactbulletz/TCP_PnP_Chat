@@ -13,4 +13,6 @@ public class ProtocolMessages {
     public static final String CLIENT_CONNECTION_CLOSURE = "CLIENT_CONNECTION_CLOSURE";
 
     public static final String BROADCAST_MESSAGE = "BROADCAST_MESSAGE";
+    public static final String PRIVATE_MESSAGE = "PRIVATE_MESSAGE";
+    public static final String ERROR_MESSAGE = "ERROR_MESSAGE";
 }

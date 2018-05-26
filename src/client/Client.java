@@ -6,6 +6,8 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class Client {
     private static final int port = 2018;
@@ -16,13 +18,24 @@ public class Client {
 
     private static Scanner scanner;
 
+
+    public static BlockingQueue<String> receivedMessagesQueue; // primljene javne, privatne i poruke o greskama
+    public static BlockingQueue<String> receivedMiscellaneousQueue; // sve osim gore navedenog
+
+
     public static void main(String[] args) throws Exception {
+        receivedMessagesQueue = new ArrayBlockingQueue<String>(1024,true);
+        receivedMiscellaneousQueue = new ArrayBlockingQueue<String>(1024,true);
+
         InetAddress address = InetAddress.getByName("127.0.0.1");
 
         socket = new Socket(address,port);
 
         socket_in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         socket_out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
+
+        (new Thread(new SchedulerThread())).start();
+        (new Thread(new MessageReaderThread())).start();
 
 
         System.out.println("Unesite 1 za Registraciju, 2 za login ili 0 za izlaz.");
@@ -49,7 +62,7 @@ public class Client {
 
     }
 
-    private static void registerUser() throws IOException {
+    private static void registerUser() throws IOException, InterruptedException {
         boolean confirmation = false; // potvrda od servera da ne postoji vec korisnik sa istim korisnickim imenom
         String serverResponse; // predstavlja odgovor od servera
         String username;
@@ -68,7 +81,7 @@ public class Client {
             socket_out.println(username);
 
             // citamo odgovor od servera
-            serverResponse = socket_in.readLine();
+            serverResponse = receivedMiscellaneousQueue.take();
 
             // proveravamo da li je server potvrdio da korisnik sa tim korisnickim imenom ne postoji
             if(serverResponse.equals(ProtocolMessages.USERNAME_AVAILABLE)){
@@ -100,7 +113,7 @@ public class Client {
             socket_out.println(ProtocolMessages.LOGIN_REQUEST); // salje serveru zahtev za login
             socket_out.println(username); // salje korisnicko ime
 
-            serverResponse = socket_in.readLine(); // ceka na odgovor servera kako bi potvrdio validnost korisnickog imena
+            serverResponse = receivedMiscellaneousQueue.take();; // ceka na odgovor servera kako bi potvrdio validnost korisnickog imena
 
             if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){ // ukoliko je korisnicko ime tacno, izlazimo iz petlje
                 usernameConfirmation = true;
@@ -118,7 +131,7 @@ public class Client {
 
             socket_out.println(password); // salje lozinku serveru
 
-            serverResponse = socket_in.readLine(); // cekaj odgovor od servera da proveri validnost lozinke
+            serverResponse = receivedMiscellaneousQueue.take(); // cekaj odgovor od servera da proveri validnost lozinke
 
             if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){ // ukoliko je lozinka ispravna obavestavamo korisnika i izlazimo iz petlje
                 passwordConfirmation = true;
@@ -130,7 +143,7 @@ public class Client {
         }
     }
 
-    private static void enterLobby() throws IOException {
+    private static void enterLobby() throws Exception {
         System.out.println("Dobrodosli u javni chat! Za slanje privatnih poruka unesite /w <imePrimaoca>, za prikaz online korisnika unesite \"who\", a za odjavu \"logout\".");
 
         String input = scanner.nextLine();
@@ -139,7 +152,7 @@ public class Client {
             if(input.equals("who")){
                 socket_out.println(ProtocolMessages.LIST_CONTACTS_REQUEST);
 
-                String response = socket_in.readLine();
+                String response = receivedMiscellaneousQueue.take();
 
                 String[] users = response.split(";");
 
@@ -147,12 +160,14 @@ public class Client {
                 for(int i=0; i<users.length; i++){
                     System.out.println(users[i]);
                 }
+
             }
 
             if(input.contains("/w ")){
-                //TODO implementirati whisper
-            }else{
-                socket_out.println(ProtocolMessages.BROADCAST_MESSAGE + " " + input);
+                input = input.substring(3);
+                socket_out.println(ProtocolMessages.PRIVATE_MESSAGE + " " + input);
+            }else if(!input.equals("who")){
+                socket_out.println(ProtocolMessages.BROADCAST_MESSAGE  + " " + input);
             }
             input = scanner.nextLine();
         }
@@ -162,6 +177,8 @@ public class Client {
         socket_out.close();
         socket_in.close();
         socket.close();
+
+        System.exit(0);
     }
 
 }

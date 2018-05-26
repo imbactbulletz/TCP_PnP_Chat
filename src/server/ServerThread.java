@@ -62,18 +62,96 @@ public class ServerThread implements Runnable {
                     socket_out.println(data);
                 }
 
-                if(input.contains(ProtocolMessages.BROADCAST_MESSAGE)){
+                if(input.startsWith(ProtocolMessages.BROADCAST_MESSAGE)){
+                    String sender = null;
                     Iterator it = Server.connections.entrySet().iterator();
+
+                    int i = input.indexOf(' ');
+                    input = input.substring(i+1);
+
+                    i = input.indexOf(' ');
+                    String message = input;
+
+                    while (it.hasNext()) {
+                        Map.Entry pair = (Map.Entry)it.next();
+
+                        User user = (User)pair.getKey();
+
+                        if((ServerThread)pair.getValue() == this){
+                            sender = user.getUsername();
+                            break;
+                        }
+                    }
+
+
+
+
+                    it = Server.connections.entrySet().iterator();
+
 
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry)it.next();
 
 
                         if(pair.getValue() != null && pair.getValue() != this){
-                            ((ServerThread)pair.getValue()).socket_out.println(input);
+                            ((ServerThread)pair.getValue()).socket_out.println(ProtocolMessages.BROADCAST_MESSAGE + " " + "[LOBBY-" + sender + "]: " + message);
                         }
                     }
                 }
+
+                if(input.startsWith(ProtocolMessages.PRIVATE_MESSAGE)){
+                    //System.out.println("PRIVATE MSG "+ input);
+                    int i = input.indexOf(' ');
+                    input = input.substring(i+1);
+
+                    i = input.indexOf(' ');
+                    String recipient = input.substring(0, i+1).trim();
+                    input = input.substring(i);
+                    String message = input.trim();
+
+
+                    String sender = null;
+                    Iterator it = Server.connections.entrySet().iterator();
+
+                    while (it.hasNext()) {
+                        Map.Entry pair = (Map.Entry)it.next();
+
+                        User user = (User)pair.getKey();
+
+                        if((ServerThread)pair.getValue() == this){
+                            sender = user.getUsername();
+                            break;
+                        }
+                    }
+
+                    it = Server.connections.entrySet().iterator();
+
+
+                    boolean userExists = false;
+                    while (it.hasNext()) {
+                        Map.Entry pair = (Map.Entry)it.next();
+
+                        User user = (User)pair.getKey();
+
+                        if(user.getUsername().equals(recipient) && pair.getValue() != null && pair.getValue() != this){
+                            ((ServerThread)pair.getValue()).socket_out.println(ProtocolMessages.PRIVATE_MESSAGE + " " + "[" + sender + " whispers]: " + message);
+                            userExists = true;
+                            break;
+                        }
+                        else if (user.getUsername().equals(recipient) && pair.getValue() == null){
+                            socket_out.println(ProtocolMessages.ERROR_MESSAGE + " " + recipient + " nije online.");
+                            userExists = true;
+                            break;
+                        }
+                    }
+
+                    if(!userExists){
+                        socket_out.println(ProtocolMessages.ERROR_MESSAGE + " " + recipient + " ne postoji u bazi korisnika.");
+                    }
+
+                }
+
+
                input = socket_in.readLine();
             }
 
@@ -86,7 +164,7 @@ public class ServerThread implements Runnable {
                 if((ServerThread)pair.getValue() == this){
                     //System.out.println("[DBG]: [B] " + ((User)pair.getKey()).getUsername() + " " + pair.getValue());
                     pair.setValue(null);
-
+                    break;
                     //System.out.println("[DBG]: [A] " + ((User)pair.getKey()).getUsername() + " " + pair.getValue());
                 }
 
