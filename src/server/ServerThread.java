@@ -88,8 +88,8 @@ public class ServerThread implements Runnable {
     }
 
     private void loginUser() throws IOException {
-        String username = socket_in.readLine();
-        boolean userFound = false;
+        String username = socket_in.readLine(); // ocekuje korisnicko ime
+        boolean userFound = false; // sluzi za proveru ispravnosti korisnickog imena
         User tempUser = null;
 
         // iteriramo kroz hash mapu kako bismo proverili akreditive korisnika
@@ -102,32 +102,37 @@ public class ServerThread implements Runnable {
             if(user.getUsername().equals(username)){ // ukoliko se prosledjeno korisnicko ime
                 tempUser = user;
                 userFound = true;                    // poklapa sa nekim korisnickim imenom iz mape
-                break;                               // oznacavamo da je korisnik nadjen i izlazimo
+                break;                               // oznacavamo da je korisnik nadjen i izlazimo iz petlje
             }
         }
 
+        // ovaj deo koda se izvrsava ako je korisnicko ime u redu
         if(userFound){
-            boolean passwordOK = false;
+            socket_out.println(ProtocolMessages.LOGIN_SUCCESFUL); // izvestava korisnika da je korisnicko ime u redu
 
-            socket_out.println(ProtocolMessages.LOGIN_SUCCESFUL);
+
+            boolean passwordOK = false; // ukazuje da li je lozinka ispravna
+
 
             while(!passwordOK) {
-                String password = socket_in.readLine();
+                String password = socket_in.readLine(); // ocekuje lozinku od korisnika
 
+                // provera da li se prosledjena lozinka poklapa sa lozinkom korisnika cije smo korisnicko ime vec verifikovali
                 if (tempUser.getPassword().equals(password)) {
-                    socket_out.println(ProtocolMessages.LOGIN_SUCCESFUL);
+                    socket_out.println(ProtocolMessages.LOGIN_SUCCESFUL); // izvestavamo korisnika da je login bio uspesan
 
+                    // "vezujemo" thread za korisnika
                     Server.connections.remove(tempUser);
                     Server.connections.put(tempUser, this);
-                    passwordOK = true;
-                } else {
+                    passwordOK = true; // menjamo kako bismo izasli iz petlje
+                } else { // ukoliko se lozinka ne poklapa izvestavamo korisnika da je lozinka neispravna i ostajemo u petlji
                     socket_out.println(ProtocolMessages.LOGIN_BAD);
                 }
             }
 
 
         }
-        else{
+        else{ // neispravno korisnicko ime, izvestava korisnika i zavrsava sa loginom
             socket_out.println(ProtocolMessages.LOGIN_BAD);
         }
     }

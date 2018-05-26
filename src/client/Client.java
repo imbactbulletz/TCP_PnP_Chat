@@ -83,8 +83,8 @@ public class Client {
     }
 
     private static void loginUser() throws Exception{
-        boolean usernameConfirmation = false;
-        boolean passwordConfirmation = false;
+        boolean usernameConfirmation = false; // potvrda od servera da je korisnicko ime ispravno
+        boolean passwordConfirmation = false; // potvrda od servera da je lozinka ispravna
 
         String serverResponse;
         String username;
@@ -93,32 +93,34 @@ public class Client {
             System.out.println("Unesite korisnicko ime:");
             username = scanner.nextLine();
 
-            socket_out.println(ProtocolMessages.LOGIN_REQUEST);
-            socket_out.println(username);
+            socket_out.println(ProtocolMessages.LOGIN_REQUEST); // salje serveru zahtev za login
+            socket_out.println(username); // salje korisnicko ime
 
-            serverResponse = socket_in.readLine();
+            serverResponse = socket_in.readLine(); // ceka na odgovor servera kako bi potvrdio validnost korisnickog imena
 
-            if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){
+            if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){ // ukoliko je korisnicko ime tacno, izlazimo iz petlje
                 usernameConfirmation = true;
             }
             else{
-                System.out.println("Takvo korisnicko ime ne postoji.");
+                System.out.println("Takvo korisnicko ime ne postoji."); // ukoliko nije tacno, ispisuje se poruka i ostajemo u petlji
             }
         }
 
+        // ovaj deo koda se izvrsava nakon sto je korisnik uneo tacan username
+
         while(!passwordConfirmation){
             System.out.println("Unesite lozinku:");
-            String password = scanner.nextLine();
+            String password = scanner.nextLine(); // ocekuje lozinku
 
-            socket_out.println(password);
+            socket_out.println(password); // salje lozinku serveru
 
-            serverResponse = socket_in.readLine();
+            serverResponse = socket_in.readLine(); // cekaj odgovor od servera da proveri validnost lozinke
 
-            if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){
+            if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){ // ukoliko je lozinka ispravna obavestavamo korisnika i izlazimo iz petlje
                 passwordConfirmation = true;
                 System.out.println("Uspesno ste ulogovani!");
             }
-            else{
+            else{ // ukoliko lozinka nije ispravna obavestavamo korisnika i ostajemo u petlji
                 System.out.println("Netacna lozinka.");
             }
         }
