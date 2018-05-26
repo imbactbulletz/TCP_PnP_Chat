@@ -24,18 +24,17 @@ public class Client {
         socket_out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
 
 
-        System.out.println("Unesite 1 za Registraciju, 2 za login ili 0 za izlaz.");
+        System.out.println("Unesite 1 za Registraciju, 2 za loginUser ili 0 za izlaz.");
         scanner = new Scanner(System.in);
 
         String input = scanner.nextLine();
 
         if(input.equals("1")){
-            registracija();
+            registerUser();
         }
 
         if(input.equals("2")){
-
-
+            loginUser();
         }
 
         if(input.equals("0")){
@@ -46,14 +45,14 @@ public class Client {
 
     }
 
-    private static void registracija() throws IOException {
-        boolean potvrda = false; // potvrda od servera da ne postoji vec korisnik sa istim korisnickim imenom
+    private static void registerUser() throws IOException {
+        boolean confirmation = false; // potvrda od servera da ne postoji vec korisnik sa istim korisnickim imenom
         String serverResponse; // predstavlja odgovor od servera
         String username;
 
 
 
-        while (!potvrda) {
+        while (!confirmation) {
             System.out.println("Unesite korisicko ime:");
              username = scanner.nextLine();
 
@@ -69,7 +68,7 @@ public class Client {
 
             // proveravamo da li je server potvrdio da korisnik sa tim korisnickim imenom ne postoji
             if(serverResponse.equals(ProtocolMessages.USERNAME_AVAILABLE)){
-                potvrda = true; // ukoliko korisnik ne postoji, postavljamo dozvolu na true kako se vise ne bismo vrteli u ovoj petlji
+                confirmation = true; // ukoliko korisnik ne postoji, postavljamo dozvolu na true kako se vise ne bismo vrteli u ovoj petlji
             }
             else{ // zauzeto korisnicko ime
                 System.out.println("Korisnik sa tim korisnickim imenom vec pstoji. Unesite neko drugo korisnicko ime.");
@@ -82,4 +81,47 @@ public class Client {
         // saljemo lozinku serveru
         socket_out.println(password);
     }
+
+    private static void loginUser() throws Exception{
+        boolean usernameConfirmation = false;
+        boolean passwordConfirmation = false;
+
+        String serverResponse;
+        String username;
+
+        while(!usernameConfirmation){
+            System.out.println("Unesite korisnicko ime:");
+            username = scanner.nextLine();
+
+            socket_out.println(ProtocolMessages.LOGIN_REQUEST);
+            socket_out.println(username);
+
+            serverResponse = socket_in.readLine();
+
+            if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){
+                usernameConfirmation = true;
+            }
+            else{
+                System.out.println("Takvo korisnicko ime ne postoji.");
+            }
+        }
+
+        while(!passwordConfirmation){
+            System.out.println("Unesite lozinku:");
+            String password = scanner.nextLine();
+
+            socket_out.println(password);
+
+            serverResponse = socket_in.readLine();
+
+            if(serverResponse.equals(ProtocolMessages.LOGIN_SUCCESFUL)){
+                passwordConfirmation = true;
+                System.out.println("Uspesno ste ulogovani!");
+            }
+            else{
+                System.out.println("Netacna lozinka.");
+            }
+        }
+    }
+
 }

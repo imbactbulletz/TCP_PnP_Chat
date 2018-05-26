@@ -40,6 +40,10 @@ public class ServerThread implements Runnable {
                     registerUser();
                 }
 
+                if(input.equals(ProtocolMessages.LOGIN_REQUEST)){
+                    loginUser();
+                }
+
                input = socket_in.readLine();
             }
 
@@ -80,6 +84,51 @@ public class ServerThread implements Runnable {
             String password = socket_in.readLine(); // ocekujemo sifru od korisnika
 
             Server.connections.put(new User(username,password),this); // dodajemo korisnika
+        }
+    }
+
+    private void loginUser() throws IOException {
+        String username = socket_in.readLine();
+        boolean userFound = false;
+        User tempUser = null;
+
+        // iteriramo kroz hash mapu kako bismo proverili akreditive korisnika
+        Iterator it = Server.connections.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+
+            User user = (User)pair.getKey();
+
+            if(user.getUsername().equals(username)){ // ukoliko se prosledjeno korisnicko ime
+                tempUser = user;
+                userFound = true;                    // poklapa sa nekim korisnickim imenom iz mape
+                break;                               // oznacavamo da je korisnik nadjen i izlazimo
+            }
+        }
+
+        if(userFound){
+            boolean passwordOK = false;
+
+            socket_out.println(ProtocolMessages.LOGIN_SUCCESFUL);
+
+            while(!passwordOK) {
+                String password = socket_in.readLine();
+
+                if (tempUser.getPassword().equals(password)) {
+                    socket_out.println(ProtocolMessages.LOGIN_SUCCESFUL);
+
+                    Server.connections.remove(tempUser);
+                    Server.connections.put(tempUser, this);
+                    passwordOK = true;
+                } else {
+                    socket_out.println(ProtocolMessages.LOGIN_BAD);
+                }
+            }
+
+
+        }
+        else{
+            socket_out.println(ProtocolMessages.LOGIN_BAD);
         }
     }
 }
