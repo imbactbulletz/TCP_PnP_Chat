@@ -34,20 +34,25 @@ public class ServerThread implements Runnable {
 
             String input = socket_in.readLine();
 
+            // vrti se sve dok klijent ne zatrazi da se zavrsi konekcija
             while(!input.equals(ProtocolMessages.CLIENT_CONNECTION_CLOSURE)){
 
+                // ukoliko je klijent trazio registraciju
                 if(input.equals(ProtocolMessages.REGISTRATION_REQUEST)){
                     registerUser();
                 }
 
+                // ukoliko je klijent trazio da se loginuje
                 if(input.equals(ProtocolMessages.LOGIN_REQUEST)){
                     loginUser();
                 }
 
+                // ukoliko je klijent trazio da se izlistaju svi kontakti
                 if(input.equals(ProtocolMessages.LIST_CONTACTS_REQUEST)){
-                    String data = "";
+                    String data = ""; // sadrzi podatke koji se salju korisniku
                     Iterator it = Server.connections.entrySet().iterator();
 
+                    // iterira kroz hashmapu i dodaje sve korisnike osim korisnika koji je pozvao "who" komandu
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry)it.next();
 
@@ -62,16 +67,20 @@ public class ServerThread implements Runnable {
                     socket_out.println(data);
                 }
 
+
+                // ukoliko je klijent poslao broadcast poruku
                 if(input.startsWith(ProtocolMessages.BROADCAST_MESSAGE)){
                     String sender = null;
                     Iterator it = Server.connections.entrySet().iterator();
 
+                    // posto je string u formatu "BROADCAST_MESSAGE <content>" secemo BROADCAST_MESSAGE deo
                     int i = input.indexOf(' ');
                     input = input.substring(i+1);
+                    input = input.trim();
 
-                    i = input.indexOf(' ');
-                    String message = input;
+                    String message = input; // <content> deo
 
+                    // iteriramo kroz mapu i trazimo thread od kog je stigao zahtev, zatim trazimo korisnika koji odgovara tom thread-u
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry)it.next();
 
@@ -88,7 +97,7 @@ public class ServerThread implements Runnable {
 
                     it = Server.connections.entrySet().iterator();
 
-
+                    // iteriramo kroz mapu i saljemo svim korisnicima osim korisniku koji je poslao zahtev za slanjem
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry)it.next();
 
@@ -99,20 +108,22 @@ public class ServerThread implements Runnable {
                     }
                 }
 
+
+                // ukoliko je klijent zatrazio da posalje privatnu poruku
                 if(input.startsWith(ProtocolMessages.PRIVATE_MESSAGE)){
-                    //System.out.println("PRIVATE MSG "+ input);
                     int i = input.indexOf(' ');
-                    input = input.substring(i+1);
+                    input = input.substring(i+1); // posto je poruka u formatu "PRIVATE_MESSAGE <recepient> <content> mora da se isparsira
 
                     i = input.indexOf(' ');
-                    String recipient = input.substring(0, i+1).trim();
+                    String recipient = input.substring(0, i+1).trim(); // <recepient> deo
                     input = input.substring(i);
-                    String message = input.trim();
+                    String message = input.trim(); // <content> deo
 
 
                     String sender = null;
                     Iterator it = Server.connections.entrySet().iterator();
 
+                    // trazi thread koji odgovara korisniku kom se salje poruka
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry)it.next();
 
@@ -127,17 +138,21 @@ public class ServerThread implements Runnable {
                     it = Server.connections.entrySet().iterator();
 
 
-                    boolean userExists = false;
+                    boolean userExists = false; // oznacava da li je primalac poruke nadjen ili ne
+
                     while (it.hasNext()) {
                         Map.Entry pair = (Map.Entry)it.next();
 
                         User user = (User)pair.getKey();
 
+                        // ukoliko je nadjen korisnik, salje poruku
                         if(user.getUsername().equals(recipient) && pair.getValue() != null && pair.getValue() != this){
                             ((ServerThread)pair.getValue()).socket_out.println(ProtocolMessages.PRIVATE_MESSAGE + " " + "[" + sender + " whispers]: " + message);
                             userExists = true;
                             break;
                         }
+
+                        // ukoliko je korisnik offline
                         else if (user.getUsername().equals(recipient) && pair.getValue() == null){
                             socket_out.println(ProtocolMessages.ERROR_MESSAGE + " " + recipient + " nije online.");
                             userExists = true;
@@ -145,6 +160,7 @@ public class ServerThread implements Runnable {
                         }
                     }
 
+                    // ukoliko nije pronadjen uopste korisnik
                     if(!userExists){
                         socket_out.println(ProtocolMessages.ERROR_MESSAGE + " " + recipient + " ne postoji u bazi korisnika.");
                     }

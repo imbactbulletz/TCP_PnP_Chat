@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 public class Server {
     public static final int port = 2018;
-    public static HashMap<User,ServerThread> connections;
+    public static HashMap<User,ServerThread> connections; // mapa koja sadrzi korisnike i njihove odgovarajuce thread-ove
 
     public static void main(String[] args) throws IOException {
         System.out.println("Server je pokrenut.");

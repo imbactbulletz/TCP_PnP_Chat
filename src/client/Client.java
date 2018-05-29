@@ -18,10 +18,11 @@ public class Client {
 
     private static Scanner scanner;
 
+    private static Thread schedulerThread;
+    private static Thread messageReaderThread;
 
     public static BlockingQueue<String> receivedMessagesQueue; // primljene javne, privatne i poruke o greskama
     public static BlockingQueue<String> receivedMiscellaneousQueue; // sve osim gore navedenog
-
 
     public static void main(String[] args) throws Exception {
         receivedMessagesQueue = new ArrayBlockingQueue<String>(1024,true);
@@ -34,9 +35,11 @@ public class Client {
         socket_in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         socket_out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
 
-        (new Thread(new SchedulerThread())).start();
-        (new Thread(new MessageReaderThread())).start();
+        schedulerThread = new Thread(new SchedulerThread());
+        schedulerThread.start();
 
+        messageReaderThread = new Thread(new MessageReaderThread());
+        messageReaderThread.start();
 
         System.out.println("Unesite 1 za Registraciju, 2 za login ili 0 za izlaz.");
         scanner = new Scanner(System.in);
