@@ -178,10 +178,10 @@ public class ServerThread implements Runnable {
                 Map.Entry pair = (Map.Entry)it.next();
 
                 if((ServerThread)pair.getValue() == this){
-                    //System.out.println("[DBG]: [B] " + ((User)pair.getKey()).getUsername() + " " + pair.getValue());
+
                     pair.setValue(null);
                     break;
-                    //System.out.println("[DBG]: [A] " + ((User)pair.getKey()).getUsername() + " " + pair.getValue());
+
                 }
 
             }
